@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대시보드 — DreamAPI</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Space+Mono:wght@0,400;0,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0c0b09; --ink-2: #2a2825; --ink-3: #6b6860;
+  --paper: #faf8f4; --paper-2: #f2efe9; --paper-3: #edeae3;
+  --rule: #d8d4cc; --hot: #ff2d20; --hot-dim: rgba(255,45,32,.07);
+  --green: #059669; --green-dim: rgba(5,150,105,.1);
+}
+html, body { height: 100%; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: 'Instrument Sans', sans-serif;
+  display: flex; flex-direction: column; cursor: none; overflow: hidden;
+}
+#cursor {
+  position: fixed; width: 8px; height: 8px; background: var(--hot);
+  border-radius: 50%; pointer-events: none; z-index: 99999;
+  transform: translate(-50%,-50%); transition: width .3s, height .3s;
+  mix-blend-mode: multiply;
+}
+#cursor-ring {
+  position: fixed; width: 36px; height: 36px; border: 1px solid var(--ink);
+  border-radius: 50%; pointer-events: none; z-index: 99998;
+  transform: translate(-50%,-50%); opacity: .25;
+}
+
+/* ── HEADER ── */
+header {
+  height: 56px; flex-shrink: 0;
+  display: grid; grid-template-columns: 240px 1fr auto;
+  align-items: center; border-bottom: 1px solid var(--rule);
+  background: rgba(250,248,244,.95); backdrop-filter: blur(12px);
+  z-index: 100;
+}
+.hdr-logo {
+  font-family: 'Space Mono', monospace; font-size: .78rem; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--ink);
+  text-decoration: none; display: flex; align-items: center; gap: 10px;
+  padding: 0 24px; border-right: 1px solid var(--rule); height: 100%;
+}
+.logo-mark {
+  width: 18px; height: 18px; border: 1.5px solid var(--ink);
+  border-radius: 50%; position: relative; flex-shrink: 0;
+}
+.logo-mark::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%); width: 5px; height: 5px;
+  background: var(--hot); border-radius: 50%;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.6);opacity:.5}
+}
+.hdr-title {
+  font-family: 'Space Mono', monospace; font-size: .68rem;
+  letter-spacing: .08em; color: var(--ink-3); text-transform: uppercase;
+  padding: 0 24px;
+}
+.hdr-right {
+  display: flex; align-items: center; gap: 16px; padding: 0 24px;
+  border-left: 1px solid var(--rule); height: 100%;
+}
+.hdr-user {
+  font-family: 'Space Mono', monospace; font-size: .65rem;
+  color: var(--ink-3); letter-spacing: .06em;
+}
+.logout-btn {
+  font-family: 'Space Mono', monospace; font-size: .65rem;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+  background: none; border: none; cursor: none; transition: color .2s; padding: 0;
+}
+.logout-btn:hover { color: var(--hot); }
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid; grid-template-columns: 280px 1fr;
+  flex: 1; overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  border-right: 1px solid var(--rule); display: flex; flex-direction: column;
+  overflow: hidden; background: var(--paper);
+}
+.sidebar-head {
+  padding: 20px 20px 16px; border-bottom: 1px solid var(--rule); flex-shrink: 0;
+}
+.sidebar-label {
+  font-family: 'Space Mono', monospace; font-size: .6rem;
+  letter-spacing: .15em; text-transform: uppercase; color: var(--hot);
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.sidebar-label::before { content:''; display:block; width:16px; height:1px; background:var(--hot); }
+.add-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: .65rem 1rem; background: var(--ink); color: var(--paper);
+  font-family: 'Space Mono', monospace; font-size: .68rem; letter-spacing: .06em;
+  text-transform: uppercase; border: none; cursor: none; transition: background .2s;
+}
+.add-btn:hover { background: var(--hot); }
+.add-btn-icon { font-size: .9rem; line-height: 1; }
+
+.sidebar-list { flex: 1; overflow-y: auto; }
+.sidebar-list::-webkit-scrollbar { width: 3px; }
+.sidebar-list::-webkit-scrollbar-track { background: transparent; }
+.sidebar-list::-webkit-scrollbar-thumb { background: var(--rule); }
+
+.api-item {
+  padding: 16px 20px; border-bottom: 1px solid var(--rule);
+  cursor: none; transition: background .15s; position: relative;
+}
+.api-item:hover { background: var(--hot-dim); }
+.api-item.active { background: var(--ink); }
+.api-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 0; background: var(--hot); transition: width .2s;
+}
+.api-item:not(.active):hover::before { width: 2px; }
+
+.api-item-name {
+  font-family: 'Space Mono', monospace; font-size: .75rem; font-weight: 700;
+  color: var(--ink); letter-spacing: -.01em; margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.api-item.active .api-item-name { color: var(--paper); }
+
+.api-item-ep {
+  font-family: 'Space Mono', monospace; font-size: .65rem;
+  color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.api-item.active .api-item-ep { color: rgba(255,255,255,.35); }
+
+.api-item-date {
+  font-size: .62rem; color: var(--rule); margin-top: 4px;
+  font-family: 'Space Mono', monospace;
+}
+.api-item.active .api-item-date { color: rgba(255,255,255,.2); }
+
+.sidebar-empty {
+  padding: 40px 20px; text-align: center;
+  font-family: 'Space Mono', monospace; font-size: .7rem;
+  color: var(--rule); letter-spacing: .06em; line-height: 1.8;
+}
+
+/* ── EDITOR PANEL ── */
+.editor-panel {
+  display: flex; flex-direction: column; overflow: hidden; background: var(--paper);
+}
+
+/* Empty state */
+.editor-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1rem;
+}
+.editor-empty-title {
+  font-family: 'Cormorant Garamond', serif; font-size: 2rem;
+  font-weight: 300; color: var(--rule); letter-spacing: -.02em;
+}
+.editor-empty-sub {
+  font-family: 'Space Mono', monospace; font-size: .65rem;
+  color: var(--rule); letter-spacing: .08em; text-transform: uppercase;
+}
+
+/* Form */
+.editor-form { display: flex; flex-direction: column; height: 100%; }
+
+.editor-top {
+  border-bottom: 1px solid var(--rule); padding: 20px 28px; flex-shrink: 0;
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end;
+}
+.ef-field { display: flex; flex-direction: column; gap: 6px; }
+.ef-label {
+  font-family: 'Space Mono', monospace; font-size: .6rem;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
+}
+.ef-input {
+  background: var(--paper-2); border: 1px solid var(--rule);
+  padding: .65rem .85rem; font-family: 'Space Mono', monospace;
+  font-size: .8rem; color: var(--ink); outline: none; transition: border-color .2s;
+  cursor: none; width: 100%;
+}
+.ef-input:focus { border-color: var(--ink); }
+.ef-input::placeholder { color: var(--rule); }
+
+.editor-actions { display: flex; gap: 8px; }
+.save-btn {
+  padding: .65rem 1.4rem; font-family: 'Space Mono', monospace;
+  font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--ink); color: var(--paper); border: none; cursor: none;
+  transition: background .2s; white-space: nowrap;
+}
+.save-btn:hover { background: var(--hot); }
+.save-btn:disabled { opacity: .4; }
+.del-btn {
+  padding: .65rem .9rem; font-family: 'Space Mono', monospace;
+  font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+  background: transparent; color: var(--ink-3); border: 1px solid var(--rule);
+  cursor: none; transition: all .2s;
+}
+.del-btn:hover { background: var(--hot-dim); color: var(--hot); border-color: var(--hot); }
+.del-btn.hidden { display: none; }
+
+/* Markdown editor */
+.md-editor {
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+  overflow: hidden; border-top: 1px solid var(--rule);
+}
+.md-pane {
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.md-pane + .md-pane { border-left: 1px solid var(--rule); }
+.md-pane-label {
+  padding: 8px 20px; background: var(--paper-2); border-bottom: 1px solid var(--rule);
+  font-family: 'Space Mono', monospace; font-size: .58rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-3); flex-shrink: 0;
+}
+.md-textarea {
+  flex: 1; resize: none; border: none; outline: none; padding: 24px;
+  font-family: 'Space Mono', monospace; font-size: .78rem; line-height: 1.75;
+  background: var(--paper); color: var(--ink); cursor: none;
+  overflow-y: auto;
+}
+.md-textarea::-webkit-scrollbar { width: 3px; }
+.md-textarea::-webkit-scrollbar-thumb { background: var(--rule); }
+.md-textarea::placeholder { color: var(--rule); }
+
+.md-preview {
+  flex: 1; overflow-y: auto; padding: 24px 28px;
+}
+.md-preview::-webkit-scrollbar { width: 3px; }
+.md-preview::-webkit-scrollbar-thumb { background: var(--rule); }
+
+/* Markdown rendered styles */
+.md-preview h1,.md-preview h2,.md-preview h3 {
+  font-family: 'Cormorant Garamond', serif; font-weight: 600;
+  color: var(--ink); letter-spacing: -.02em; margin: 1.5rem 0 .75rem;
+}
+.md-preview h1 { font-size: 1.8rem; }
+.md-preview h2 { font-size: 1.4rem; }
+.md-preview h3 { font-size: 1.1rem; }
+.md-preview p { font-size: .88rem; color: var(--ink-3); line-height: 1.7; margin-bottom: .85rem; }
+.md-preview code {
+  font-family: 'Space Mono', monospace; font-size: .75rem;
+  background: var(--paper-3); padding: .15rem .4rem; color: var(--ink);
+}
+.md-preview pre {
+  background: var(--ink); padding: 1.25rem; margin: 1rem 0; overflow-x: auto;
+}
+.md-preview pre code {
+  background: none; color: #86efac; padding: 0; font-size: .75rem; line-height: 1.7;
+}
+.md-preview ul,.md-preview ol { padding-left: 1.5rem; margin-bottom: .85rem; }
+.md-preview li { font-size: .88rem; color: var(--ink-3); line-height: 1.7; }
+.md-preview blockquote {
+  border-left: 2px solid var(--hot); padding-left: 1rem; margin: 1rem 0;
+  font-style: italic; color: var(--ink-3);
+}
+.md-preview hr { border: none; border-top: 1px solid var(--rule); margin: 1.5rem 0; }
+.md-preview a { color: var(--hot); text-decoration: none; }
+.md-preview table { width: 100%; border-collapse: collapse; font-size: .85rem; margin-bottom: 1rem; }
+.md-preview th { font-family: 'Space Mono', monospace; font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; padding: .5rem .75rem; border-bottom: 1px solid var(--rule); text-align: left; }
+.md-preview td { padding: .5rem .75rem; border-bottom: 1px solid var(--paper-3); color: var(--ink-3); font-size: .82rem; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+  padding: .75rem 1.25rem; font-family: 'Space Mono', monospace;
+  font-size: .7rem; letter-spacing: .06em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+  transform: translateY(16px); opacity: 0; transition: all .3s ease;
+  pointer-events: none;
+}
+.toast.show { transform: none; opacity: 1; }
+.toast.success { background: var(--ink); color: var(--paper); }
+.toast.error { background: var(--hot); color: #fff; }
+.toast::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.6; }
+
+/* Status dot */
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+  display: inline-block; margin-right: 6px;
+  animation: breathe 2s ease-in-out infinite;
+}
+
+@media(max-width:900px){
+  .layout { grid-template-columns: 220px 1fr; }
+  .md-editor { grid-template-columns: 1fr; }
+  .md-pane + .md-pane { border-left: none; border-top: 1px solid var(--rule); }
+}
+@media(max-width:640px){
+  body { overflow: auto; }
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { max-height: 280px; }
+  .editor-top { grid-template-columns: 1fr; }
+  header { grid-template-columns: 1fr auto; }
+  .hdr-title { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- HEADER -->
+<header>
+  <a href="/" class="hdr-logo"><span class="logo-mark"></span>DreamAPI</a>
+  <div class="hdr-title">
+    <span class="status-dot"></span>Dashboard
+  </div>
+  <div class="hdr-right">
+    <span class="hdr-user" id="hdrUser"></span>
+    <button class="logout-btn" onclick="logout()">로그아웃 →</button>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-label">API 목록</div>
+      <button class="add-btn" onclick="newApi()">
+        <span class="add-btn-icon">+</span>
+        <span>새 API 추가</span>
+      </button>
+    </div>
+    <div class="sidebar-list" id="sidebarList">
+      <div class="sidebar-empty">불러오는 중...</div>
+    </div>
+  </aside>
+
+  <!-- EDITOR -->
+  <div class="editor-panel" id="editorPanel">
+    <!-- Empty state -->
+    <div class="editor-empty" id="editorEmpty">
+      <div class="editor-empty-title">API를 선택하거나<br>추가하십시오</div>
+      <div class="editor-empty-sub">← 좌측에서 선택</div>
+    </div>
+
+    <!-- Form (hidden initially) -->
+    <div class="editor-form" id="editorForm" style="display:none">
+      <div class="editor-top">
+        <div class="ef-field">
+          <label class="ef-label">API 이름</label>
+          <input class="ef-input" id="fieldName" placeholder="예: 사용자 조회" />
+        </div>
+        <div class="ef-field">
+          <label class="ef-label">엔드포인트</label>
+          <input class="ef-input" id="fieldEndpoint" placeholder="예: GET /v1/users/:id" />
+        </div>
+        <div class="editor-actions">
+          <button class="save-btn" id="saveBtn" onclick="saveApi()">저장 →</button>
+          <button class="del-btn hidden" id="delBtn" onclick="deleteApi()">삭제</button>
+        </div>
+      </div>
+
+      <div class="md-editor">
+        <div class="md-pane">
+          <div class="md-pane-label">마크다운 작성</div>
+          <textarea class="md-textarea" id="mdInput"
+            placeholder="## 설명&#10;&#10;API에 대한 설명을 작성하십시오.&#10;&#10;## 파라미터&#10;&#10;| 이름 | 타입 | 설명 |&#10;|------|------|------|&#10;| id | string | 사용자 ID |&#10;&#10;## 예제&#10;&#10;```json&#10;{&#10;  &quot;id&quot;: &quot;user_123&quot;&#10;}&#10;```"
+            oninput="renderPreview()"></textarea>
+        </div>
+        <div class="md-pane">
+          <div class="md-pane-label">미리보기</div>
+          <div class="md-preview" id="mdPreview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Cursor ──────────────────────────────────────────────────────────────────
+const cur = document.getElementById('cursor')
+const ring = document.getElementById('cursor-ring')
+let mx=0,my=0,rx=0,ry=0
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; cur.style.left=mx+'px'; cur.style.top=my+'px'; })
+;(function animRing(){ rx+=(mx-rx)*.12; ry+=(my-ry)*.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(animRing) })()
+document.addEventListener('mouseover', e => {
+  if (e.target.matches('a,button,input,textarea')) { cur.style.width='16px'; cur.style.height='16px'; }
+  else { cur.style.width='8px'; cur.style.height='8px'; }
+})
+
+// ── State ───────────────────────────────────────────────────────────────────
+let apis = []
+let currentId = null  // null = new
+
+// ── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  const me = await fetch('/api/me').then(r => r.json()).catch(() => null)
+  if (!me || me.error) { window.location.href = '/login'; return; }
+  document.getElementById('hdrUser').textContent = me.username
+  await loadApis()
+}
+
+async function loadApis() {
+  const res = await fetch('/api/apis?limit=200')
+  const data = await res.json()
+  apis = data.items || []
+  renderSidebar()
+}
+
+// ── Sidebar ─────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const list = document.getElementById('sidebarList')
+  if (!apis.length) {
+    list.innerHTML = '<div class="sidebar-empty">등록된 API가<br>없습니다.</div>'
+    return
+  }
+  list.innerHTML = apis.map(a => `
+    <div class="api-item${currentId === a.id ? ' active' : ''}" onclick="selectApi('${a.id}')">
+      <div class="api-item-name">${esc(a.name)}</div>
+      <div class="api-item-ep">${esc(a.endpoint)}</div>
+      <div class="api-item-date">${fmtDate(a.updatedAt)}</div>
+    </div>
+  `).join('')
+}
+
+// ── Select / New ─────────────────────────────────────────────────────────────
+function selectApi(id) {
+  const api = apis.find(a => a.id === id)
+  if (!api) return
+  currentId = id
+  showForm()
+  document.getElementById('fieldName').value = api.name
+  document.getElementById('fieldEndpoint').value = api.endpoint
+  document.getElementById('mdInput').value = api.docs || ''
+  document.getElementById('delBtn').classList.remove('hidden')
+  renderPreview()
+  renderSidebar()
+}
+
+function newApi() {
+  currentId = null
+  showForm()
+  document.getElementById('fieldName').value = ''
+  document.getElementById('fieldEndpoint').value = ''
+  document.getElementById('mdInput').value = ''
+  document.getElementById('delBtn').classList.add('hidden')
+  renderPreview()
+  renderSidebar()
+  document.getElementById('fieldName').focus()
+}
+
+function showForm() {
+  document.getElementById('editorEmpty').style.display = 'none'
+  document.getElementById('editorForm').style.display = 'flex'
+}
+
+// ── Save ────────────────────────────────────────────────────────────────────
+async function saveApi() {
+  const name     = document.getElementById('fieldName').value.trim()
+  const endpoint = document.getElementById('fieldEndpoint').value.trim()
+  const docs     = document.getElementById('mdInput').value
+  if (!name || !endpoint) { showToast('이름과 엔드포인트를 입력하십시오.', 'error'); return; }
+
+  const btn = document.getElementById('saveBtn')
+  btn.disabled = true; btn.textContent = '저장 중...'
+
+  try {
+    const url    = currentId ? `/api/apis/${currentId}` : '/api/apis'
+    const method = currentId ? 'PUT' : 'POST'
+    const res    = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, endpoint, docs })
+    })
+    const data = await res.json()
+    if (!res.ok) { showToast(data.error, 'error'); return; }
+
+    if (!currentId) currentId = data.id
+    showToast('저장되었습니다.', 'success')
+    await loadApis()
+    renderSidebar()
+    document.getElementById('delBtn').classList.remove('hidden')
+  } catch { showToast('저장 중 오류가 발생했습니다.', 'error') }
+  finally { btn.disabled = false; btn.textContent = '저장 →' }
+}
+
+// ── Delete ───────────────────────────────────────────────────────────────────
+async function deleteApi() {
+  if (!currentId) return
+  if (!confirm('이 API를 삭제하시겠습니까?')) return
+  try {
+    const res = await fetch(`/api/apis/${currentId}`, { method: 'DELETE' })
+    if (!res.ok) { showToast('삭제 중 오류가 발생했습니다.', 'error'); return; }
+    currentId = null
+    document.getElementById('editorEmpty').style.display = 'flex'
+    document.getElementById('editorForm').style.display = 'none'
+    showToast('삭제되었습니다.', 'success')
+    await loadApis()
+  } catch { showToast('삭제 중 오류가 발생했습니다.', 'error') }
+}
+
+// ── Markdown Preview ─────────────────────────────────────────────────────────
+function renderPreview() {
+  const src = document.getElementById('mdInput').value
+  document.getElementById('mdPreview').innerHTML =
+    src ? marked.parse(src) : '<p style="color:var(--rule);font-family:\'Space Mono\',monospace;font-size:.7rem">미리보기가 여기에 표시됩니다.</p>'
+}
+
+// ── Logout ───────────────────────────────────────────────────────────────────
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' })
+  window.location.href = '/login'
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.className = `toast ${type} show`
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000)
+}
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+function fmtDate(iso) {
+  const d = new Date(iso)
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`
+}
+
+// Ctrl+S to save
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault(); saveApi()
+  }
+})
+
+init()
+</script>
+</body>
+</html>
