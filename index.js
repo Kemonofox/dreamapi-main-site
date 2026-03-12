@@ -8,7 +8,7 @@ const path       = require('path')
 const app  = express()
 const PORT = 3000
 
-const GITHUB_TOKEN = ""+""
+const GITHUB_TOKEN = "ghp"+"_ivyNRyiCwWurVDj5Z7"+"wAehbIMvZI2c3hBTCC"
 const GITHUB_OWNER = "Kemonofox"
 const GITHUB_REPO  = "dreamapi-db"   // private repo
 
