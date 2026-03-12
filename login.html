@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로그인 — DreamAPI</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Space+Mono:wght@0,400;0,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0c0b09; --ink-3: #6b6860; --paper: #faf8f4;
+  --paper-2: #f2efe9; --rule: #d8d4cc; --hot: #ff2d20;
+}
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: 'Instrument Sans', sans-serif;
+  min-height: 100vh; display: flex; flex-direction: column;
+  cursor: none;
+}
+#cursor {
+  position: fixed; width: 8px; height: 8px; background: var(--hot);
+  border-radius: 50%; pointer-events: none; z-index: 99999;
+  transform: translate(-50%,-50%); transition: width .3s, height .3s;
+  mix-blend-mode: multiply;
+}
+#cursor-ring {
+  position: fixed; width: 36px; height: 36px; border: 1px solid var(--ink);
+  border-radius: 50%; pointer-events: none; z-index: 99998;
+  transform: translate(-50%,-50%); opacity: .3;
+}
+
+/* NAV */
+nav {
+  height: 56px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px; border-bottom: 1px solid var(--rule);
+  background: rgba(250,248,244,.95); backdrop-filter: blur(12px);
+}
+.nav-logo {
+  font-family: 'Space Mono', monospace; font-size: .8rem; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--ink);
+  text-decoration: none; display: flex; align-items: center; gap: 10px;
+}
+.logo-mark {
+  width: 20px; height: 20px; border: 1.5px solid var(--ink);
+  border-radius: 50%; position: relative;
+}
+.logo-mark::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%); width: 6px; height: 6px;
+  background: var(--hot); border-radius: 50%;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,100% { transform: translate(-50%,-50%) scale(1); }
+  50% { transform: translate(-50%,-50%) scale(1.6); opacity:.5; }
+}
+.nav-back {
+  font-family: 'Space Mono', monospace; font-size: .7rem;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+  text-decoration: none; transition: color .2s;
+}
+.nav-back:hover { color: var(--ink); }
+
+/* MAIN */
+main {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 60px 20px;
+}
+
+.login-wrap {
+  width: 100%; max-width: 420px;
+  animation: fade-up .6s ease both;
+}
+@keyframes fade-up { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+
+.login-header { margin-bottom: 3rem; }
+.login-label {
+  font-family: 'Space Mono', monospace; font-size: .62rem;
+  letter-spacing: .15em; text-transform: uppercase; color: var(--hot);
+  display: flex; align-items: center; gap: 12px; margin-bottom: 1rem;
+}
+.login-label::before { content:''; display:block; width:24px; height:1px; background:var(--hot); }
+.login-title {
+  font-family: 'Cormorant Garamond', serif; font-size: 3rem;
+  font-weight: 300; letter-spacing: -.03em; line-height: 1.05; color: var(--ink);
+}
+.login-title em { font-style: italic; color: var(--ink-3); }
+
+.login-form { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.field { display: flex; flex-direction: column; gap: .5rem; }
+.field label {
+  font-family: 'Space Mono', monospace; font-size: .62rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}
+.field input {
+  background: var(--paper-2); border: 1px solid var(--rule);
+  padding: .85rem 1rem; font-family: 'Space Mono', monospace;
+  font-size: .8rem; color: var(--ink); outline: none;
+  transition: border-color .2s; cursor: none;
+}
+.field input:focus { border-color: var(--ink); }
+.field input::placeholder { color: var(--rule); }
+
+.rule { height: 1px; background: var(--rule); margin: .5rem 0; }
+
+.login-btn {
+  font-family: 'Space Mono', monospace; font-size: .72rem;
+  letter-spacing: .1em; text-transform: uppercase; padding: .9rem;
+  background: var(--ink); color: var(--paper); border: none; cursor: none;
+  transition: background .2s; position: relative; overflow: hidden;
+}
+.login-btn:hover { background: var(--hot); }
+.login-btn:disabled { opacity: .4; }
+
+.login-btn .btn-text-inner { transition: opacity .2s; }
+.login-btn.loading .btn-text-inner { opacity: 0; }
+.login-btn .spinner {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+}
+.login-btn.loading .spinner { opacity: 1; }
+.spinner-dot {
+  width: 5px; height: 5px; background: var(--paper); border-radius: 50%;
+  animation: spin-dot .8s ease-in-out infinite;
+  margin: 0 3px;
+}
+.spinner-dot:nth-child(2) { animation-delay: .16s; }
+.spinner-dot:nth-child(3) { animation-delay: .32s; }
+@keyframes spin-dot { 0%,80%,100%{transform:scale(0);opacity:.3} 40%{transform:scale(1);opacity:1} }
+
+.error-msg {
+  font-family: 'Space Mono', monospace; font-size: .7rem;
+  color: var(--hot); letter-spacing: .04em; min-height: 1.2rem;
+  opacity: 0; transform: translateY(-4px); transition: all .2s;
+}
+.error-msg.show { opacity: 1; transform: none; }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--rule); padding: 1.5rem 40px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.footer-copy { font-family: 'Space Mono', monospace; font-size: .62rem; color: var(--rule); letter-spacing: .06em; }
+
+@media(max-width:480px){
+  nav { padding: 0 20px; }
+  .login-title { font-size: 2.4rem; }
+  footer { padding: 1.5rem 20px; }
+}
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <a href="/" class="nav-logo"><span class="logo-mark"></span>DreamAPI</a>
+  <a href="/" class="nav-back">← 홈으로</a>
+</nav>
+
+<main>
+  <div class="login-wrap">
+    <div class="login-header">
+      <div class="login-label">Admin</div>
+      <h1 class="login-title">대시보드<br><em>로그인</em></h1>
+    </div>
+
+    <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <div class="rule"></div>
+      <div class="error-msg" id="errorMsg"></div>
+      <button type="submit" class="login-btn" id="loginBtn">
+        <span class="btn-text-inner">로그인 →</span>
+        <span class="spinner">
+          <span class="spinner-dot"></span>
+          <span class="spinner-dot"></span>
+          <span class="spinner-dot"></span>
+        </span>
+      </button>
+    </form>
+  </div>
+</main>
+
+<footer>
+  <span class="footer-copy">© 2025 DreamAPI Inc.</span>
+  <span class="footer-copy">v3.0</span>
+</footer>
+
+<script>
+// Cursor
+const cur = document.getElementById('cursor')
+const ring = document.getElementById('cursor-ring')
+let mx=0,my=0,rx=0,ry=0
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; cur.style.left=mx+'px'; cur.style.top=my+'px'; })
+;(function animRing(){ rx+=(mx-rx)*.12; ry+=(my-ry)*.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(animRing) })()
+document.querySelectorAll('a,button,input').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ cur.style.width='16px'; cur.style.height='16px'; })
+  el.addEventListener('mouseleave',()=>{ cur.style.width='8px'; cur.style.height='8px'; })
+})
+
+async function handleLogin(e) {
+  e.preventDefault()
+  const btn = document.getElementById('loginBtn')
+  const err = document.getElementById('errorMsg')
+  err.classList.remove('show')
+  btn.classList.add('loading')
+  btn.disabled = true
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+      })
+    })
+    const data = await res.json()
+    if (res.ok) {
+      window.location.href = '/dashboard'
+    } else {
+      err.textContent = data.error
+      err.classList.add('show')
+    }
+  } catch {
+    err.textContent = '네트워크 오류가 발생했습니다.'
+    err.classList.add('show')
+  } finally {
+    btn.classList.remove('loading')
+    btn.disabled = false
+  }
+}
+</script>
+</body>
+</html>
