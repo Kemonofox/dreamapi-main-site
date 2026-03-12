@@ -6,11 +6,11 @@ const crypto     = require('crypto')
 const path       = require('path')
 
 const app  = express()
-const PORT = process.env.PORT || 3000
+const PORT = 3000
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN
-const GITHUB_OWNER = process.env.GITHUB_OWNER
-const GITHUB_REPO  = process.env.GITHUB_REPO   // private repo
+const GITHUB_TOKEN = ""+""
+const GITHUB_OWNER = "Kemonofox"
+const GITHUB_REPO  = "dreamapi-db"   // private repo
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN })
 
